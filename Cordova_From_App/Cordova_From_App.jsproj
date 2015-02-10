@@ -110,9 +110,16 @@
     <VisualStudioVersion>12.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="images\" />
-    <Content Include="css\style.css" />
-    <Content Include="css\style.scss" />
+    <Content Include="css\fonts.css" />
+    <Content Include="css\fonts\-g5pDUSRgvxvOl5u-a_WHw.woff" />
+    <Content Include="css\fonts\bH7276GfdCjMjApa_dkG6T8E0i7KZn-EPnyo3HZu7kw.woff" />
+    <Content Include="css\fonts\bH7276GfdCjMjApa_dkG6VtXRa8TVwTICgirnJhmVJw.woff2" />
+    <Content Include="css\fonts\HqHm7BVC_nzzTui2lzQTDT8E0i7KZn-EPnyo3HZu7kw.woff" />
+    <Content Include="css\fonts\HqHm7BVC_nzzTui2lzQTDVtXRa8TVwTICgirnJhmVJw.woff2" />
+    <Content Include="css\fonts\pEobIV_lL25TKBpqVI_a2w.woff2" />
+    <Content Include="css\index.css" />
+    <Content Include="css\index.scss" />
+    <Content Include="images\XST.CB.varnishedwood.jpg" />
     <Content Include="merges\android\scripts\android2.3-jscompat.js">
       <Compile>True</Compile>
       <Minify>False</Minify>
@@ -294,6 +301,10 @@
       <IncludedFiles>
       </IncludedFiles>
     </Content>
+    <Content Include="scripts\jquery-2.1.3.intellisense.js" />
+    <Content Include="scripts\jquery-2.1.3.js" />
+    <Content Include="scripts\jquery-2.1.3.min.js" />
+    <Content Include="scripts\jquery-2.1.3.min.map" />
     <Content Include="scripts\knockout-3.2.0.debug.js">
       <Compile>True</Compile>
       <Minify>False</Minify>

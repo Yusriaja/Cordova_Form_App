@@ -19,31 +19,18 @@
 
         function Page( input ) {
             var dat = this;
-            
             dat.Name    = input.name;
-            dat.Number  = input.number;
-            dat.Fields  = input.fields;  
+            dat.Number  = input.number;  
+            dat.ValidationViewModel = input.validationViewModel ;
+
+            dat.GetName = function () { return dat.Name; }
 
             dat.Validate = function () {
-
-                if (dat.Fields == null) {
-                    console.log("Page has no fields to validate!")
-                    return true;
-                }
-
-                var pageValid = true;
-                for (item in dat.constructor) {
-                    console.log(item.isValid());
-                    pageValid = !item.isValid() ? false : pageValid;
-                }
-                console.log("pageValid : " + pageValid);
-                return pageValid;
+                if (dat.ValidationViewModel == undefined || dat.ValidationViewModel == null) { return true; }
+                dat.ValidationViewModel.errors.showAllMessages();
+                return dat.ValidationViewModel.isValid();
             }
-
         }
-
-
-
 
 
         // --- Data model for Pages
@@ -52,57 +39,67 @@
             var dis = this;
             dis.PageArray = null; 
             dis.CurrentPage = ko.observable();
+            dis.NavArray = null;
+            
+            //return array from js object
+            dis.GetNavArray = function (ExcludeFromNavTitles) {
+                var array = [];
+                
+                var index = 0;
+                for (var key in dis.PageArray) {
+                    if (!inArray(key, ExcludeFromNavTitles)) {
+                        array[index] = key;
+                        index++;
+                    }
+                }
+                return array;
+            }
 
+            dis.ShowNavigation = ko.computed(function () {
+                if (dis.CurrentPage() == undefined || dis.NavArray == null) { return false; }
+                var currentName = dis.CurrentPage().Name;
+                return inArray(currentName, dis.NavArray);
+            });
 
-            dis.PageTransition = function (from, to) {
-
-                // annimate - hide from , show to
-                console.log("Pages.CurrentPage.Name : " + dis.CurrentPage.Name);
-                console.log("Page was        : " + from.Name);
-                console.log("Setting page to : " + to.Name);
-
-                dis.CurrentPage(to);
-
+            function inArray(item_to_check, TitlesArray) {
+                var inArray = false;
+                for (var index = 0; index < TitlesArray.length; index++) {
+                    if (item_to_check == TitlesArray[index]) {
+                        inArray = true;
+                    }
+                }
+                return inArray;
             }
             
-            dis.GoToPage = function( Page ){
-                //pageName e.g. "Home"
-                //search array by name
-                //for()
 
-                //console.log("----- Page ------");
-                //console.log(Page.Name);
-                /*
-                if (dis.CurrentPage == Page) {
-                    console.log("Pages are same - Don't do owt!");
-                    return null;
-                }
-                else {
-                    console.log("Pages are differnt go to next stage!");
-                    console.log("Page diff from current page : " + dis.CurrentPage.Name);
-                }
-                */
-                dis.PageTransition(dis.CurrentPage, Page);
-
+            //Takes string arg - converts to Page
+            dis.NavPageSelector = function (PageVal) {
+                var Page = dis.PageArray[PageVal];
+                dis.GoToPage(Page);
             }
 
-            dis.Next = function (Page) {
-
-                /*
-                if (dis.CurrentPage.Validate()) {
-                    //valid, therefore set CurrentPage to next in array 
-                    //NB simple routing could be replaced
-                    //dis.CurrentPage = dis.PageArray[dis.CurrentPage.Number + 1];
-                    //??????? - dis.PageTransition(from, to);
+            //For navigation, takes a string
+            dis.GoToPage = function (Page) {
+                var pageIsValid = dis.CurrentPage().Validate();
+                if (pageIsValid) {
+                    dis.CurrentPage(Page);
                 }
-                else {
-                    // TODO: show message &/or sort out Knockout validation
-                }
-                */
-
             }
 
-            
+            // will find next page along from dis.CurrentPage
+            dis.Next = function () {
+                var setToNext = false;
+                var nextPage = null;
+                for (var key in dis.PageArray) {
+                    if (setToNext) {
+                        dis.GoToPage(dis.PageArray[key]);
+                        return;
+                    }
+                    setToNext = dis.CurrentPage() == dis.PageArray[key] ? true : false;
+                }
+            }
+
+
         }
 
 
@@ -122,9 +119,8 @@
             ];
 
             that.Title      = ko.observable();
-            that.FirstName  = ko.observable().extend({ required: true });
-            that.LastName   = ko.observable().extend({ required: true });
-
+            that.FirstName  = ko.observable();  
+            that.LastName   = ko.observable(); 
 
             var today = new Date();
             var hh = today.getHours();
@@ -132,7 +128,7 @@
             var ss = today.getSeconds();
 
             var dd = today.getDate();
-            var MM = today.getMonth() + 1; //January is 0!
+            var MM = today.getMonth() + 1; //January is 0 in JS by convention!
             var yyyy = today.getFullYear();
 
             that.currentHour = ko.observable(hh);
@@ -143,7 +139,6 @@
                 return dateTimeConcat(that.currentHour(), that.currentMin(), that.currentSec(), ":");
             });
             
-
             that.currentDay = ko.observable(dd);
             that.currentMonth = ko.observable(MM);
             that.currentYear = ko.observable(yyyy);
@@ -151,93 +146,75 @@
                 return dateTimeConcat(that.currentDay(), that.currentMonth(), that.currentYear(), "/");
             });
 
-
             that.hours = generateSelectArray({ size: 24, startNo: 0 });            
             that.mins = generateSelectArray({ size: 60, startNo: 0 });
             that.secs = generateSelectArray({ size: 60, startNo: 0 });
 
-            that.days = generateSelectArray({ size: 31, startNo: 1 });
+
+            that.days_Current = ko.observableArray();
+            that.days = ko.observableArray();
             that.months = generateSelectArray({ size: 12, startNo: 1 });
             that.years = generateSelectArray({ size: 116, startNo: 1900 });
             
-
             that.day = ko.observable(1);
             that.month = ko.observable(1);
             that.year = ko.observable(1990);
             that.DOB = ko.computed(function () {
                 return dateTimeConcat(that.day(), that.month(), that.year(), "/");
-            }).extend({ requied: true }); //dateISO: true 
-
-
-            
-
-            // --- Navigation ---
-
-            //user starts on Home page
-                //click 'continue'
-                //slides to 'Who' page
-                //updates that.CurrentPage    
-
-            //clicks on continue
-                //checks form validation
-                //form is invlaid 
-                //shows messages
-
-            //user fills in all fields correctly
-              
-            /*
-            Pages.goToPage("Home");
-            Pages.Next();
-            
-            Pages.Current;
-
-            Pages.Page[1];
-            Page.Validate();
-
-
-            Page({ "name": "Home", "number": 0, array of fields  );
-
-            var Pages = {
-                "Home":     { number: 0, valid: true },
-                "Who":      { number: 1, valid: false },
-                "Where":    { number: 2, valid: false },
-                "When":     { number: 3, valid: false },
-                "Review":   { number: 4, valid: false },
-                "Submit:":  { number: 5, valid: false }
-            };
-
-            that.CurrentPage = Pages.Who;
-            
-
-
-            that.Page_1_valid = ko.computed(function () {
-                var pageValid = that.Title.isValid() &&
-                                that.FirstName.isValid() &&
-                                that.LastName.isValid() &&
-                                that.DOB.isValid();
-                return pageValid;
             });
-            */
+
+            that.Feedback = ko.observable();
+            
+            // get days of month according to month and if leap year
+            that.getDays_DOB = ko.computed(function () {
+                var currentYear = that.year();
+                var currentMonth = that.month();
+                var SelectListDays = generateUpdatedSelectArray(currentMonth, currentYear);
+                that.days(SelectListDays);
+            });
+            
+            that.getDays_Current = ko.computed(function () {
+                var currentYear = that.currentYear();
+                var currentMonth = that.currentMonth();
+                var SelectListDays = generateUpdatedSelectArray(currentMonth, currentYear);
+                that.days_Current(SelectListDays);
+            });
+
+            function generateUpdatedSelectArray(currentMonth, currentYear) {
+                var daysInFeb = leapYear(currentYear) == true ? 29 : 28;
+                var monthToDayMapping = [0, 31, daysInFeb, 31, 30, , 31, 30, 31, 31, 30, 31, 30, 31]; //array starts at 1 not 0
+                var daysInMonth = monthToDayMapping[currentMonth];
+                daysInMonth = daysInMonth == undefined ? 31 : daysInMonth;
+                var SelectListDays = generateSelectArray({ size: daysInMonth, startNo: 1 });
+                return SelectListDays;
+            }
+
+
+            // --- Validation - with ko.validate
+
+            var validationModel = ko.validatedObservable({
+                FirstName: that.FirstName.extend({ required: true }),
+                LastName: that.LastName.extend({ required: true })
+            });
+
+            // --- Setup Pages
 
             that.Pages = new Pages();
 
-            //Fields to validate
-            var WhoFields = [ that.FirstName, that.LastName, that.DOB ];
-            var WhenFields = [ that.CurrentDate ];
-
-            that.Pages.PageArray = [
-                new Page({ "name": "Home",  "number": 0, "fields": null }),
-                new Page({ "name": "Who",   "number": 1, "fields": WhoFields }),
-                new Page({ "name": "Where", "number": 2, "fields": null }),
-                new Page({ "name": "When",  "number": 3, "fields": WhenFields }),
-                new Page({ "name": "Review", "number": 4, "fields": null }),
-                new Page({ "name": "Submit", "number": 5, "fields": null })
-            ];
-
-            //set the current page as the Home page [0] in array
-            that.Pages.CurrentPage(that.Pages.PageArray[0]);
+            that.Pages.PageArray = {
+                "Home" :    new Page({ "name": "Home",  "number": 0, "validationViewModel": null }),
+                "Who":      new Page({ "name": "Who", "number": 1, "validationViewModel": validationModel }),
+                "Where":    new Page({ "name": "Where", "number": 2, "validationViewModel": null }),
+                "When":     new Page({ "name": "When", "number": 3, "validationViewModel": null }),
+                "Submit":   new Page({ "name": "Submit", "number": 4, "validationViewModel": null }),
+                "Thanks":   new Page({ "name": "Thanks", "number": 5, "validationViewModel": null })
+            };
             
-            console.log(that.Pages);
+            //set the current page as the Home page [0] in array
+            that.Pages.CurrentPage(that.Pages.PageArray.Home);
+            var ExcludeFromNavTitles = ["Home","Thanks"];
+            that.Pages.NavArray = that.Pages.GetNavArray(ExcludeFromNavTitles);
+
             // --- Location / Google Maps ---
 
             //Coord enum - with default location
@@ -292,7 +269,6 @@
                 if (that.googleMap == undefined || that.googleMap == null) {
                     that.googleMap = new google.maps.Map(document.getElementById("googleMap"), mapProp);
                 }
-                
 
                 if (that.MapMarker == undefined) {
                     that.MapMarker = new google.maps.Marker({
@@ -310,12 +286,14 @@
 
             }
 
-
-            that.submit = function () {
-                console.log(that.Title.isValid());
-                //console.log("DOB valid : " + that.DOB.isValid());
-                console.log(ko.validation.group(that));
+            that.SubmitAllData = function () {
+                console.log("----- Form Output data -----");
+                console.log(that);
+                that.Pages.Next();
             }
+
+
+            // --- Static Methods/Functions
 
             function dateTimeConcat(arg1 ,arg2 , arg3, div ) {
                 var out = "";
@@ -324,7 +302,6 @@
                 out += arg3
                 return out;
             }
-
 
             function generateSelectArray(options) {
                 var array = [];
@@ -335,26 +312,43 @@
                 return array;
             };
 
+            function leapYear(year) {
+                return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
+            }
+
+
 
         }
         
 
-
         // --- View model for form
-
         function FormViewModel() {
             var self = this;
             self.FormData = new FormData();
 
         }
 
+        // --- register sliding binding
+        ko.bindingHandlers.slideVisible = {
+            update: function (element, valueAccessor, allBindings) {
+                var value = valueAccessor();
+                var valueUnwrapped = ko.unwrap(value);
+                var duration = allBindings.get('slideDuration') || 400; // 400ms is default duration unless otherwise specified
+
+                if (valueUnwrapped == true)
+                    $(element).slideDown(duration); // Make the element visible    
+                else
+                    $(element).slideUp(duration);   // Make the element invisible
+                   
+            }
+        };
+
 
         // --- knockout validation config
-
         ko.validation.init({
             registerExtenders: true,
             messagesOnModified: true,
-            insertMessages: false
+            insertMessages: true
         });
 
         ko.applyBindings(new FormViewModel());
@@ -368,8 +362,6 @@
     function onResume() {
         // TODO: This application has been reactivated. Restore application state here.
     };
-
-
 
 
 })();
